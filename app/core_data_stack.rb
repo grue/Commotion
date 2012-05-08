@@ -1,3 +1,5 @@
+# Note: The context needs to be shared across all entities
+
 class CoreDataStack
   def self.shared
     @stack ||= CoreDataStack.new

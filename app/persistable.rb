@@ -1,3 +1,4 @@
+# This could be collapsed into Entity
 module Persistable
   def self.included(klass)
     klass.extend ClassMethods
@@ -44,21 +45,19 @@ module Persistable
       request = NSFetchRequest.alloc.init
       request.entity = NSEntityDescription.entityForName(self.to_s, inManagedObjectContext:self.context)
       request.sortDescriptors = [NSSortDescriptor.alloc.initWithKey(options[:order] || 'createdAt', ascending:false)]
-      if query
-        request.predicate = NSPredicate.predicateWithFormat(query)
-      end
+      request.predicate = NSPredicate.predicateWithFormat(query) if query
       
       error_ptr = Pointer.new(:object)
       results = self.context.executeFetchRequest(request, error:error_ptr)
-      if results == nil
+      unless results
         raise "Error when fetching results: #{error_ptr[0].description}"
       end
       results
     end
-    
+
+    # TODO: This probably isn't a good idea as method_missing will
+    # be slow, and define_method isn't available in RubyMotion    
     def method_missing(method_name, *args, &block) 
-      # TODO: This probably isn't a good idea as method_missing will
-      # be slow, and define_method isn't available in RubyMotion
       string_name = method_name.to_s
       return super unless string_name =~ /^find_by_\w+/
       last_word = string_name.split('_').last
