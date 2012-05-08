@@ -22,6 +22,7 @@ module Persistable
     end
     
     def find(attribute, value)
+      # TODO: Only works for strings!
       all("#{attribute} LIKE[c] '#{value}'")
     end
   
@@ -42,6 +43,7 @@ module Persistable
     end
     
     def method_missing(method_name, *args, &block) 
+      # Note: define_method isn't available in RubyMotion
       string_name = method_name.to_s
       return super unless string_name =~ /^find_by_\w+/
       last_word = string_name.split('_').last
