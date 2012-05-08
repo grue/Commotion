@@ -15,7 +15,10 @@ class CoreDataStack
     return @model if @model
     
     @model = NSManagedObjectModel.alloc.init
+
+    # TODO: Needs to be dynamic
     @model.entities = [Movie.entity, Song.entity]
+
     @model
   end
 
