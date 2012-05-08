@@ -4,6 +4,6 @@ class Song < Entity
   field :createdAt, type: Time
   
   def to_s
-    "Song: #{self.title} earned #{self.artist}"
+    "Song: #{self.title} by #{self.artist}"
   end
 end

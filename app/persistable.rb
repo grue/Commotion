@@ -2,6 +2,14 @@ module Persistable
   def self.included(klass)
     klass.extend ClassMethods
   end
+  
+  def save
+    self.class.save
+  end
+  
+  def destroy
+    self.class.destroy(self)
+  end
     
   module ClassMethods
     def context
@@ -11,6 +19,7 @@ module Persistable
     def create
       entity = NSEntityDescription.insertNewObjectForEntityForName(self.to_s, inManagedObjectContext:self.context)
       yield entity
+      entity.createdAt = Time.now if entity.respond_to?(:createdAt)
       save
     end
   
@@ -21,19 +30,24 @@ module Persistable
       end
     end
     
+    def destroy(entity)
+      self.context.deleteObject(entity)
+      save
+    end
+    
     def find(attribute, value)
       # TODO: Only works for strings!
-      all("#{attribute} LIKE[c] '#{value}'")
+      all("#{attribute} LIKE[c] '#{value}'").first
     end
   
-    def all(query=nil, order='createdAt')
+    def all(query=nil, options={})
       request = NSFetchRequest.alloc.init
       request.entity = NSEntityDescription.entityForName(self.to_s, inManagedObjectContext:self.context)
-      request.sortDescriptors = [NSSortDescriptor.alloc.initWithKey(order, ascending:false)]
+      request.sortDescriptors = [NSSortDescriptor.alloc.initWithKey(options[:order] || 'createdAt', ascending:false)]
       if query
         request.predicate = NSPredicate.predicateWithFormat(query)
       end
-    
+      
       error_ptr = Pointer.new(:object)
       results = self.context.executeFetchRequest(request, error:error_ptr)
       if results == nil
@@ -43,7 +57,8 @@ module Persistable
     end
     
     def method_missing(method_name, *args, &block) 
-      # Note: define_method isn't available in RubyMotion
+      # TODO: This probably isn't a good idea as method_missing will
+      # be slow, and define_method isn't available in RubyMotion
       string_name = method_name.to_s
       return super unless string_name =~ /^find_by_\w+/
       last_word = string_name.split('_').last
